@@ -2,12 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import mapboxgl from "mapbox-gl";
-
+import { RevolvingDot } from "react-loader-spinner";
 const MapComponent = () => {
     mapboxgl.accessToken =
         "pk.eyJ1IjoiaGFtemEzMjQ1IiwiYSI6ImNsbjh6YnNpNTAwY3MycWw1cHYwNXo1N24ifQ.ffBExfXWXnWCoEWIqJzgEg";
 
     const [map, setMap] = useState(null);
+    const [loader, setLoader] = useState(false);
+    const [toggler, setToggler] = useState(false);
+    const [value, setValue] = useState("");
 
     const initializeMap = () => {
         const initialCoordinates = [43.158157, 20.346822];
@@ -21,8 +24,19 @@ const MapComponent = () => {
 
         setMap(newMap);
     };
-
+    function clearMap() {
+        setToggler(!toggler);
+    }
+    function getRandomColor() {
+        const letters = "0123456789ABCDEF";
+        let color = "#";
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
     const showImageOfMap = (result) => {
+        setLoader(false);
         console.log("watafak", result);
         let coordinates = [];
 
@@ -53,37 +67,17 @@ const MapComponent = () => {
             };
 
             map.addLayer({
-                id: "line",
+                id: `${Math.random()}`,
                 type: "line",
                 source: {
                     type: "geojson",
                     data: geojson,
                 },
                 paint: {
-                    "line-color": "#86A7FC",
+                    "line-color": getRandomColor(),
                     "line-width": 10,
                 },
             });
-        }
-    };
-
-    // if result is whole hop from traceroute
-    const showWayOnMap = async (result) => {
-        const ipInfoToken = "218ef8019d85f5";
-        console.log("Called", result);
-
-        try {
-            const responses = await Promise.all(
-                result.map((item) =>
-                    fetch(
-                        `https://ipinfo.io/${item.ip}?token=${ipInfoToken}`
-                    ).then((response) => response.json())
-                )
-            );
-
-            showImageOfMap(responses);
-        } catch (error) {
-            console.error("Error fetching IP information:", error);
         }
     };
 
@@ -95,9 +89,11 @@ const MapComponent = () => {
                 map.remove();
             }
         };
-    }, []);
+    }, [toggler]);
 
     const handleMeasureLatencyClick = async () => {
+        setLoader(true);
+
         let curTime = new Date();
 
         let options = {
@@ -106,59 +102,84 @@ const MapComponent = () => {
             second: "2-digit",
             hour12: false,
         };
-
         const hostURL = document.querySelector(".usersHostValue").value;
         let formattedTime = curTime.toLocaleTimeString("en-US", options);
+        const result = await fetch(
+            `/traceroute?url=${encodeURIComponent(hostURL)}`
+        ).then((response) => {
+            return response.json();
+        });
 
-        try {
-            const result = await fetch(
-                `/traceroute?url=${encodeURIComponent(hostURL)}`
-            ).then((response) => response.json());
+        console.log(result);
+        let latitude;
+        let longitude;
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    latitude = position.coords.latitude;
+                    longitude = position.coords.longitude;
 
-            console.log(result);
-            // await showWayOnMap(result); //if results are hops
-            let latitude;
-            let longitude;
-            if (navigator.geolocation) {
-                // Get the user's current position
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        latitude = position.coords.latitude;
-                        longitude = position.coords.longitude;
-
-                        result.unshift({
-                            defLoc: "default",
-                            lat: latitude,
-                            lon: longitude,
-                        });
-                        console.log(result);
-                        showImageOfMap(result);
-
-                        // Now you can use the latitude and longitude as needed in your application.
-                    },
-                    (error) => {
-                        console.error(
-                            `Error getting location: ${error.message}`
-                        );
-                    }
-                );
-            } else {
-                console.error("Geolocation is not supported by this browser.");
-            }
-        } catch (error) {
-            console.error("Error fetching traceroute data:", error);
+                    result.unshift({
+                        defLoc: "default",
+                        lat: latitude,
+                        lon: longitude,
+                    });
+                    console.log(result);
+                    showImageOfMap(result);
+                },
+                (error) => {
+                    console.error(`Error getting location: ${error.message}`);
+                }
+            );
+        } else {
+            console.error("Geolocation is not supported by this browser.");
         }
     };
 
     return (
-        <div>
-            <div id="map" style={{ height: "400px" }}></div>
-            <input
-                type="text"
-                className="usersHostValue"
-                placeholder="Enter host URL"
-            />
-            <button onClick={handleMeasureLatencyClick}>Measure Latency</button>
+        <div className="container">
+            <div className="infoContainer">
+                <h2>Traceroute Online - Trace and Map the Packets Path</h2>
+                <p>
+                    Utilize traceroute online to perform an advanced visual
+                    traceroute that maps and enriches output from mtr. With ASN
+                    and Geolocation data to better understand the network path.
+                </p>
+                <div className="searchContainer">
+                    <button className="clearMap" onClick={clearMap}>
+                        Clear map
+                    </button>
+                    <input
+                        onChange={(el) => {
+                            setValue(el.target.value);
+                        }}
+                        type="text"
+                        className="usersHostValue"
+                        placeholder="Enter host URL"
+                    />
+                    <button onClick={handleMeasureLatencyClick}>
+                        Measure Latency
+                    </button>
+                </div>
+            </div>
+
+            <div className="mapContainer">
+                <div
+                    className="loader"
+                    style={{ display: `${loader ? "flex" : "none"}` }}
+                >
+                    <RevolvingDot
+                        visible={true}
+                        height="80"
+                        width="80"
+                        color="#4fa94d"
+                        ariaLabel="revolving-dot-loading"
+                        wrapperStyle={{}}
+                        wrapperClass=""
+                    />
+                </div>
+                <div id="map" style={{ height: "750px", width: "100%" }}></div>
+            </div>
         </div>
     );
 };
