@@ -1,12 +1,22 @@
 .container {
     min-height: 100vh;
     background-color: #607d8b;
-    padding-top: 20vh;
+    padding-top: 10vh;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
+    position: relative;
+}
+.containerMapSidebar {
+    display: flex;
+    width: 100%;
+    margin-top: 50px;
+    margin-bottom: 150px;
+    height: 550px;
+    align-items: center;
+    justify-content: center;
 }
 
 .infoContainer {
@@ -34,13 +44,13 @@
     padding: 10px;
     border: 2px solid #607d8b; /* Cosmic Dust Gray */
     border-radius: 5px;
-    margin-right: 10px; /* Adjust spacing as needed */
     font-size: 16px;
     width: 100%;
 }
 
 /* Style for the search button */
-.searchContainer button {
+.searchContainer button,
+.clearMap {
     padding: 10px 20px;
     background-color: #001f3f; /* Deep Space Blue */
     color: #ffd700; /* Celestial Gold */
@@ -50,6 +60,12 @@
     font-size: 16px;
     text-wrap: nowrap;
 }
+.clearMap {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+}
 
 /* Hover effect for the button */
 .searchContainer button:hover {
@@ -57,8 +73,8 @@
 }
 .mapContainer {
     position: relative;
-    width: 90%;
-    margin-top: 50px;
+    width: 76%;
+    height: 100%;
 }
 
 .loader {
@@ -72,4 +88,64 @@
     align-items: center;
     justify-content: center;
     background-color: #05162877;
+}
+.custom-popup {
+    background-color: white;
+    color: black;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    max-width: 300px;
+}
+
+.custom-popup p {
+    margin: 5px 0;
+}
+
+.custom-popup p:first-child {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.custom-popup p:not(:first-child) {
+    color: #666;
+    font-size: 12px;
+}
+
+@media screen and (max-width: 640px) {
+    .containerMapSidebar {
+        flex-direction: column;
+        height: 700px;
+        gap: 20px;
+    }
+    .infoContainer {
+        width: 96%;
+    }
+    .infoContainer p {
+        font-size: 20px;
+    }
+    .infoContainer h2 {
+        font-size: 30px;
+        margin-bottom: 0;
+    }
+    .mapContainer {
+        width: 90%;
+        margin-bottom: 10px;
+    }
+    .searchContainer {
+        width: 90%;
+    }
+    .searchContainer button {
+        overflow: hidden;
+        width: 35%;
+    }
+    .searchContainer input[type="text"] {
+        padding: 10px;
+        border: 2px solid #607d8b; /* Cosmic Dust Gray */
+        border-radius: 5px;
+        font-size: 16px;
+        width: 60%;
+    }
 }

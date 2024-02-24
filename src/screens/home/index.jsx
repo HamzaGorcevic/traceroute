@@ -1,8 +1,10 @@
 // MapComponent.js
 
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { RevolvingDot } from "react-loader-spinner";
+import Sidebar from "./sidebar";
+import { CoordsContext } from "../../contex";
 const MapComponent = () => {
     mapboxgl.accessToken =
         "pk.eyJ1IjoiaGFtemEzMjQ1IiwiYSI6ImNsbjh6YnNpNTAwY3MycWw1cHYwNXo1N24ifQ.ffBExfXWXnWCoEWIqJzgEg";
@@ -11,6 +13,9 @@ const MapComponent = () => {
     const [loader, setLoader] = useState(false);
     const [toggler, setToggler] = useState(false);
     const [value, setValue] = useState("");
+    const [icon, setIcon] = useState("");
+    const [hops, setHops] = useState([]);
+    const { coords } = useContext(CoordsContext);
 
     const initializeMap = () => {
         const initialCoordinates = [43.158157, 20.346822];
@@ -24,9 +29,11 @@ const MapComponent = () => {
 
         setMap(newMap);
     };
+
     function clearMap() {
         setToggler(!toggler);
     }
+
     function getRandomColor() {
         const letters = "0123456789ABCDEF";
         let color = "#";
@@ -35,49 +42,70 @@ const MapComponent = () => {
         }
         return color;
     }
+
     const showImageOfMap = (result) => {
         setLoader(false);
-        console.log("watafak", result);
         let coordinates = [];
-
+        console.log(result);
         for (let i = 0; i < result.length; i++) {
             if (result[i].lat) {
                 const [lat, lon] = [result[i].lat, result[i].lon];
-                let temp = [lon, lat];
+                let temp = [lon + i / 1000, lat + i / 1000];
+                [result[i].lon, result[i].lat] = temp;
                 coordinates.push(temp);
 
+                var popup = new mapboxgl.Popup({
+                    className: "custom-popup",
+                }).setHTML(
+                    `<p>${result[i].country}</p><p>${i}.hop</p><p>${result[i].city}</p><p>ip:address ${result[i].query}</p><p>lat: ${result[i].lat} lon: ${result[i].lon}</p>`
+                );
+
                 let marker = new mapboxgl.Marker({
-                    color: "black",
+                    color: "blue",
                     rotation: 45,
                 })
-                    .setLngLat([lon, lat])
-                    .addTo(map);
+                    .setLngLat(temp)
+                    .addTo(map)
+                    .setPopup(popup);
             }
         }
+        console.log(result);
+
+        setHops(result);
 
         if (coordinates.length >= 2) {
-            console.log("coord", coordinates);
-            const geojson = {
-                type: "Feature",
-                properties: {},
-                geometry: {
-                    type: "LineString",
-                    coordinates: coordinates,
-                },
-            };
+            const segmentColors = Array.from(
+                { length: coordinates.length - 1 },
+                getRandomColor
+            );
 
-            map.addLayer({
-                id: `${Math.random()}`,
-                type: "line",
-                source: {
-                    type: "geojson",
-                    data: geojson,
-                },
-                paint: {
-                    "line-color": getRandomColor(),
-                    "line-width": 10,
-                },
-            });
+            for (let i = 0; i < coordinates.length - 1; i++) {
+                const startCoord = coordinates[i];
+                const endCoord = coordinates[i + 1];
+
+                const segmentGeojson = {
+                    type: "Feature",
+                    properties: {},
+                    geometry: {
+                        type: "LineString",
+                        coordinates: [startCoord, endCoord],
+                    },
+                };
+
+                map.addLayer({
+                    id: `${Math.random()}`,
+                    type: "line",
+                    source: {
+                        type: "geojson",
+                        data: segmentGeojson,
+                    },
+                    paint: {
+                        "line-color": segmentColors[i],
+                        "line-width": 10,
+                        "line-offset": 5,
+                    },
+                });
+            }
         }
     };
 
@@ -90,49 +118,42 @@ const MapComponent = () => {
             }
         };
     }, [toggler]);
+    useEffect(() => {
+        if (map) {
+            map.flyTo({
+                zoom: 20,
+                center: coords,
+                speed: 3,
+            });
+        }
+    }, [coords]);
 
-    const handleMeasureLatencyClick = async () => {
-        setLoader(true);
+    const handleMeasureLatencyClick = async (e) => {
+        if (e.key == "Enter" || e.type == "click") {
+            setLoader(true);
 
-        let curTime = new Date();
+            let curTime = new Date();
 
-        let options = {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: false,
-        };
-        const hostURL = document.querySelector(".usersHostValue").value;
-        let formattedTime = curTime.toLocaleTimeString("en-US", options);
-        const result = await fetch(
-            `/traceroute?url=${encodeURIComponent(hostURL)}`
-        ).then((response) => {
-            return response.json();
-        });
+            let options = {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: false,
+            };
+            let formattedTime = curTime.toLocaleTimeString("en-US", options);
 
-        console.log(result);
-        let latitude;
-        let longitude;
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    latitude = position.coords.latitude;
-                    longitude = position.coords.longitude;
+            //  currently working on !
+            const hostURL = document.querySelector(".usersHostValue").value;
+            setIcon(`https://icon.horse/icon/${hostURL}`);
+            const result = await fetch(
+                `/traceroute?url=${encodeURIComponent(hostURL)}`
+            )
+                .then((response) => {
+                    return response.json();
+                })
+                .catch((error) => []);
 
-                    result.unshift({
-                        defLoc: "default",
-                        lat: latitude,
-                        lon: longitude,
-                    });
-                    console.log(result);
-                    showImageOfMap(result);
-                },
-                (error) => {
-                    console.error(`Error getting location: ${error.message}`);
-                }
-            );
-        } else {
-            console.error("Geolocation is not supported by this browser.");
+            showImageOfMap(result);
         }
     };
 
@@ -145,40 +166,48 @@ const MapComponent = () => {
                     traceroute that maps and enriches output from mtr. With ASN
                     and Geolocation data to better understand the network path.
                 </p>
-                <div className="searchContainer">
+            </div>
+
+            <div className="searchContainer">
+                <input
+                    onChange={(el) => {
+                        setValue(el.target.value);
+                    }}
+                    type="text"
+                    className="usersHostValue"
+                    placeholder="Enter host URL"
+                    onKeyDown={handleMeasureLatencyClick}
+                />
+                <button onClick={handleMeasureLatencyClick}>
+                    Measure Latency
+                </button>
+            </div>
+            <div className="containerMapSidebar">
+                <div className="mapContainer">
                     <button className="clearMap" onClick={clearMap}>
                         Clear map
                     </button>
-                    <input
-                        onChange={(el) => {
-                            setValue(el.target.value);
-                        }}
-                        type="text"
-                        className="usersHostValue"
-                        placeholder="Enter host URL"
-                    />
-                    <button onClick={handleMeasureLatencyClick}>
-                        Measure Latency
-                    </button>
-                </div>
-            </div>
+                    <div
+                        className="loader"
+                        style={{ display: `${loader ? "flex" : "none"}` }}
+                    >
+                        <RevolvingDot
+                            visible={true}
+                            height="80"
+                            width="80"
+                            color="#4fa94d"
+                            ariaLabel="revolving-dot-loading"
+                            wrapperStyle={{}}
+                            wrapperClass=""
+                        />
+                    </div>
 
-            <div className="mapContainer">
-                <div
-                    className="loader"
-                    style={{ display: `${loader ? "flex" : "none"}` }}
-                >
-                    <RevolvingDot
-                        visible={true}
-                        height="80"
-                        width="80"
-                        color="#4fa94d"
-                        ariaLabel="revolving-dot-loading"
-                        wrapperStyle={{}}
-                        wrapperClass=""
-                    />
+                    <div
+                        id="map"
+                        style={{ height: "100%", width: "100%" }}
+                    ></div>
                 </div>
-                <div id="map" style={{ height: "750px", width: "100%" }}></div>
+                <Sidebar hops={hops} icon={icon} />
             </div>
         </div>
     );
