@@ -1,10 +1,12 @@
 .sidebar {
     width: 20%; /* Adjust width as needed */
     height: 100%; /* Adjust height as needed */
-    background-color: #f0f0f0; /* Sidebar background color */
+    background-color: #001f3f;
     overflow-y: auto; /* Enable vertical scrolling */
     padding-left: 10px;
     padding-right: 10px;
+    color: #ffd700;
+    border-radius: 0px 10px 10px 0;
 }
 
 .logo img {
@@ -15,8 +17,9 @@
 .hop {
     display: flex;
     align-items: center;
+    cursor: pointer;
     padding: 10px;
-    border-bottom: 1px solid #ccc; /* Add a border between hops */
+    border-bottom: 1px solid #fff2af; /* Add a border between hops */
 }
 
 .hop-number {
