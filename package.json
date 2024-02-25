@@ -1,4 +1,5 @@
 {
+    "homepage": "https://hamzagorcevic.github.io/traceroute",
     "name": "traceroute",
     "version": "0.1.0",
     "proxy": "http://localhost:8080",
