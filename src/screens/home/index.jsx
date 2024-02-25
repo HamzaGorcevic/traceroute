@@ -48,29 +48,44 @@ const MapComponent = () => {
         let coordinates = [];
         console.log(result);
         for (let i = 0; i < result.length; i++) {
-            if (result[i].lat) {
-                const [lat, lon] = [result[i].lat, result[i].lon];
-                let temp = [lon + i / 1000, lat + i / 1000];
-                [result[i].lon, result[i].lat] = temp;
+            if (result[i] != "1") {
+                const [lat, lon] = [result[i].latitude, result[i].longitude];
+
+                let tempLon = lon.toString().split(".");
+                let tempLat = lat.toString().split(".");
+
+                if (tempLon.length > 2) {
+                    tempLon.pop();
+                }
+                if (tempLat.length > 2) {
+                    tempLat.pop();
+                }
+
+                const newLon = parseFloat(tempLon.join("."));
+                const newLat = parseFloat(tempLat.join("."));
+
+                let temp = [newLon + i / 1000, newLat + i / 1000];
+
+                [result[i].longitude, result[i].latitude] = temp;
                 coordinates.push(temp);
 
                 var popup = new mapboxgl.Popup({
                     className: "custom-popup",
                 }).setHTML(
-                    `<p>${result[i].country}</p><p>${i}.hop</p><p>${result[i].city}</p><p>ip:address ${result[i].query}</p><p>lat: ${result[i].lat} lon: ${result[i].lon}</p>`
+                    `<p>${result[i].country_name}</p><p>${i}.hop</p><p>${result[i].city}</p><p>ip:address ${result[i].ip}</p><p>lat: ${result[i].latitude} lon: ${result[i].longitude}</p>`
                 );
 
-                let marker = new mapboxgl.Marker({
-                    color: "blue",
-                    rotation: 45,
-                })
-                    .setLngLat(temp)
-                    .addTo(map)
-                    .setPopup(popup);
+                if (!isNaN(temp[0])) {
+                    let marker = new mapboxgl.Marker({
+                        color: "blue",
+                        rotation: 45,
+                    })
+                        .setLngLat(temp)
+                        .addTo(map)
+                        .setPopup(popup);
+                }
             }
         }
-        console.log(result);
-
         setHops(result);
 
         if (coordinates.length >= 2) {
@@ -128,6 +143,12 @@ const MapComponent = () => {
         }
     }, [coords]);
 
+    function isPrivateIPAddress(ip) {
+        const privateIPRegex = /^(?:10|127|169\.254|192\.168)\./;
+        const privateIPRangeRegex = /^172\.(1[6-9]|2[0-9]|3[0-1])\./;
+        return privateIPRegex.test(ip) || privateIPRangeRegex.test(ip);
+    }
+
     const handleMeasureLatencyClick = async (e) => {
         if (e.key == "Enter" || e.type == "click") {
             setLoader(true);
@@ -137,16 +158,13 @@ const MapComponent = () => {
             const hostURL = document.querySelector(".usersHostValue").value;
             setIcon(`https://icon.horse/icon/${hostURL}`);
 
-            let hops = await fetch(
-                `https://tracerouter-servrer.onrender.com/traceroute`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ destination: hostURL }), // Use "destination" as the key
-                }
-            )
+            let hops = await fetch(`http://localhost:8080/traceroute`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ destination: hostURL }), // Use "destination" as the key
+            })
                 .then((response) => {
                     return response.json();
                 })
@@ -163,9 +181,20 @@ const MapComponent = () => {
             const result = await Promise.all(
                 hops.map(async (item) => {
                     console.log(item);
+                    if (
+                        item.ip == "Request timed out." ||
+                        isPrivateIPAddress(item.ip)
+                    ) {
+                        return "1";
+                    }
+
                     const response = await fetch(
-                        `http://ip-api.com/json/${item.ip}`
-                    ).then((el) => el.json());
+                        `https://api.ipgeolocation.io/ipgeo?apiKey=390b7bba2614408cab65ac286cdfffd1&ip=${item.ip}`
+                    )
+                        .then((el) => el.json())
+                        .catch((er) => {
+                            return { ip: "" };
+                        });
                     console.log(response);
                     return response;
                 })

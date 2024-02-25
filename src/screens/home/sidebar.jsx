@@ -13,7 +13,7 @@ const Sidebar = ({ hops, icon }) => {
     //     el.lat = el.lat + i / 10000;
     //     return el;
     // });
-    // console.log("sidebar:", hops);
+    console.log("sidebar:", hops);
     return (
         <div className="sidebar">
             {hops.length > 1 ? (
@@ -27,15 +27,18 @@ const Sidebar = ({ hops, icon }) => {
                                 key={index}
                                 className="hop"
                                 onClick={() => {
-                                    if (hop.lat) {
-                                        setCoords([hop.lon, hop.lat]);
+                                    if (hop.latitude) {
+                                        setCoords([
+                                            hop.longitude,
+                                            hop.latitude,
+                                        ]);
                                     }
                                 }}
                             >
                                 <div className="hop-number">{index + 1}</div>
                                 <div className="hop-info">
                                     <div className="country">
-                                        {hop?.country}
+                                        {hop?.country_name}
                                     </div>
                                     <div className="city">{hop?.city}</div>
                                     {hop.query === "Request timed out." ? (
@@ -44,16 +47,16 @@ const Sidebar = ({ hops, icon }) => {
                                         </div>
                                     ) : (
                                         <>
-                                            {hop.lat && hop.lon ? (
+                                            {hop.latitude && hop.longitude ? (
                                                 <div className="lat-long">
                                                     <div className="ip">
-                                                        ip: {hop?.query}
+                                                        ip: {hop?.ip}
                                                     </div>
                                                     <div className="ip">
                                                         isp: {hop?.isp}
                                                     </div>
-                                                    Lat: {hop?.lat}, Lon:{" "}
-                                                    {hop?.lon}
+                                                    Lat: {hop?.latitude}, Lon:{" "}
+                                                    {hop?.longitude}
                                                 </div>
                                             ) : (
                                                 <div className="private-ip">
