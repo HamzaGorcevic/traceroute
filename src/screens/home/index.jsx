@@ -9,6 +9,9 @@ const MapComponent = () => {
     mapboxgl.accessToken =
         "pk.eyJ1IjoiaGFtemEzMjQ1IiwiYSI6ImNsbjh6YnNpNTAwY3MycWw1cHYwNXo1N24ifQ.ffBExfXWXnWCoEWIqJzgEg";
 
+    // const url = "http://localhost:8080";
+    const url = "https://tracerouter-servrer.onrender.com";
+
     const [map, setMap] = useState(null);
     const [loader, setLoader] = useState(false);
     const [toggler, setToggler] = useState(false);
@@ -158,7 +161,7 @@ const MapComponent = () => {
             const hostURL = document.querySelector(".usersHostValue").value;
             setIcon(`https://icon.horse/icon/${hostURL}`);
 
-            let hops = await fetch(`http://localhost:8080/traceroute`, {
+            let hops = await fetch(url + `/traceroute`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -208,6 +211,13 @@ const MapComponent = () => {
         return <Sidebar hops={hops} icon={icon} />;
     }, [hops, icon]);
 
+    async function giveMEMEME() {
+        const response = await fetch(url + "/test");
+
+        const data = await response.json();
+        console.log(data);
+    }
+
     return (
         <div className="container">
             <div className="infoContainer">
@@ -217,6 +227,7 @@ const MapComponent = () => {
                     traceroute that maps and enriches output from mtr. With ASN
                     and Geolocation data to better understand the network path.
                 </p>
+                <button onClick={giveMEMEME}>GIVE ME MEME</button>
             </div>
 
             <div className="searchContainer">
