@@ -1,6 +1,6 @@
 // MapComponent.js
 
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { RevolvingDot } from "react-loader-spinner";
 import Sidebar from "./sidebar";
@@ -132,30 +132,52 @@ const MapComponent = () => {
         if (e.key == "Enter" || e.type == "click") {
             setLoader(true);
 
-            let curTime = new Date();
-
-            let options = {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-                hour12: false,
-            };
-            let formattedTime = curTime.toLocaleTimeString("en-US", options);
-
             //  currently working on !
+
             const hostURL = document.querySelector(".usersHostValue").value;
             setIcon(`https://icon.horse/icon/${hostURL}`);
-            const result = await fetch(
-                `/traceroute?url=${encodeURIComponent(hostURL)}`
+
+            let hops = await fetch(
+                `https://tracerouter-servrer.onrender.com/traceroute`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ destination: hostURL }), // Use "destination" as the key
+                }
             )
                 .then((response) => {
                     return response.json();
                 })
-                .catch((error) => []);
+                .then((res) => {
+                    return res;
+                })
+                .catch((err) => {
+                    console.log("ERROR:", err);
+                    return [];
+                });
 
+            hops.unshift({ ip: "" });
+            console.log(hops);
+            const result = await Promise.all(
+                hops.map(async (item) => {
+                    console.log(item);
+                    const response = await fetch(
+                        `http://ip-api.com/json/${item.ip}`
+                    ).then((el) => el.json());
+                    console.log(response);
+                    return response;
+                })
+            );
+            console.log("result:", result);
             showImageOfMap(result);
         }
     };
+
+    const sidebar = useMemo(() => {
+        return <Sidebar hops={hops} icon={icon} />;
+    }, [hops, icon]);
 
     return (
         <div className="container">
@@ -207,7 +229,7 @@ const MapComponent = () => {
                         style={{ height: "100%", width: "100%" }}
                     ></div>
                 </div>
-                <Sidebar hops={hops} icon={icon} />
+                {sidebar}
             </div>
         </div>
     );

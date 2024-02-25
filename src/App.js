@@ -6,7 +6,7 @@ import Context from "./contex";
 function App() {
     return (
         <Context>
-            <MapComponent />;
+            <MapComponent />
         </Context>
     );
 }
