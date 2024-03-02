@@ -9,8 +9,9 @@ const MapComponent = () => {
     mapboxgl.accessToken =
         "pk.eyJ1IjoiaGFtemEzMjQ1IiwiYSI6ImNsbjh6YnNpNTAwY3MycWw1cHYwNXo1N24ifQ.ffBExfXWXnWCoEWIqJzgEg";
 
-    // const url = "http://localhost:8080";
-    const url = "https://tracerouter-servrer.onrender.com";
+    const url = "http://localhost:8080";
+    // const url = "https://tracerouter-servrer.onrender.com";
+    // const url = "http://localhost:5000";
 
     const [map, setMap] = useState(null);
     const [loader, setLoader] = useState(false);
@@ -185,7 +186,8 @@ const MapComponent = () => {
                 hops.map(async (item) => {
                     console.log(item);
                     if (
-                        item.ip == "Request timed out." ||
+                        item.ip.trim() == "Request timed out." ||
+                        item.ip.trim() == "Trace complete." ||
                         isPrivateIPAddress(item.ip)
                     ) {
                         return "1";
@@ -195,6 +197,7 @@ const MapComponent = () => {
                         `https://api.ipgeolocation.io/ipgeo?apiKey=390b7bba2614408cab65ac286cdfffd1&ip=${item.ip}`
                     )
                         .then((el) => el.json())
+                        .then((res) => res)
                         .catch((er) => {
                             return { ip: "" };
                         });
